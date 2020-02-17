@@ -6,7 +6,6 @@ import User from '../models/User';
 class SessionController {
   async store(req, res) {
     const schema = Yup.object().shape({
-      name: Yup.string().required(),
       email: Yup.string()
         .email()
         .required(),
@@ -14,7 +13,7 @@ class SessionController {
     });
 
     if (!(await schema.isValid(req.body))) {
-      return res.send(400).json({ error: 'Schema validation fail' });
+      return res.status(400).json({ error: 'Schema validation fail' });
     }
 
     const { email, password } = req.body;
