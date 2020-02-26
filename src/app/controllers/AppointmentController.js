@@ -1,4 +1,4 @@
-import { format, isBefore, parseISO, startOfHour } from 'date-fns';
+import { format, isBefore, parseISO, startOfHour, subHours } from 'date-fns';
 import pt from 'date-fns/locale/pt-BR';
 import * as Yup from 'yup';
 import Appointment from '../models/Appointment';
@@ -51,6 +51,14 @@ class AppointmentController {
       where: { id: provider_id, provider: true },
     });
 
+    const isSameUser = provider_id === req.userId;
+
+    if (isSameUser) {
+      return res
+        .status(401)
+        .json({ error: 'You cannot schedule an appointment to yourself' });
+    }
+
     if (!isProvider) {
       return res
         .status(401)
@@ -67,8 +75,7 @@ class AppointmentController {
       where: {
         provider_id,
         canceled_at: null,
-        date,
-        hourStart,
+        date: hourStart,
       },
     });
 
@@ -93,6 +100,30 @@ class AppointmentController {
       content: `Novo agendamento de ${user.name} para ${formattedDate}`,
       user: provider_id,
     });
+
+    return res.json(appointment);
+  }
+
+  async delete(req, res) {
+    const appointment = await Appointment.findByPk(req.params.id);
+
+    if (appointment.user_id !== req.userId) {
+      return res.status(400).json({
+        error: 'You do not have permission to cancel this appointment',
+      });
+    }
+
+    const dateWithSub = subHours(appointment.date, 2);
+
+    if (isBefore(dateWithSub, new Date())) {
+      return res.status(401).json({
+        error: 'You can only cancel appointments 2 hours in advance',
+      });
+    }
+
+    appointment.canceled_at = new Date();
+
+    await appointment.save();
 
     return res.json(appointment);
   }
