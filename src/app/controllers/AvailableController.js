@@ -32,6 +32,7 @@ class AvailableController {
       },
     });
 
+    /** TODO: Store this list into a Table */
     const schedule = [
       '08:00',
       '09:00',
